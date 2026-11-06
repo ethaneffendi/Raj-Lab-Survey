@@ -77,7 +77,7 @@
     .player {
       /* Width is capped by the viewport height so the whole player fits on
          one screen; --chrome covers the header, question, controls and gaps. */
-      --chrome: 292px;
+      --chrome: 300px;
       width: min(100%, calc((100vh - var(--chrome)) * 2237 / 1330));
       width: min(100%, calc((100dvh - var(--chrome)) * 2237 / 1330));
       min-width: min(100%, 320px);
@@ -87,10 +87,12 @@
       gap: 18px;
     }
 
+    .player.has-demo { --chrome: 336px; }
+
     .player__question {
       margin: 0;
       text-align: center;
-      font-size: 1.75rem;
+      font-size: 1.5rem;
       font-weight: 600;
       letter-spacing: -.022em;
       line-height: 1.15;
@@ -130,6 +132,54 @@
     }
 
     .player__image img.is-loading { opacity: 0; }
+
+    /* ---------- Rater instructions (shown before the first case) ---------- */
+
+    /* The intro can be taller than the image box on short screens, so let
+       the box scroll; margin:auto centers it without clipping the top. */
+    .player__image:has(> .player__intro) { overflow-y: auto; }
+
+    .player__intro {
+      max-width: 620px;
+      margin: auto;
+      padding: 24px;
+      color: var(--label);
+      font-size: .95rem;
+      line-height: 1.5;
+    }
+
+    .player__intro h3 {
+      margin: 0 0 10px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -.02em;
+    }
+
+    .player__intro p { margin: 0 0 10px; color: var(--secondary); }
+    .player__intro strong { color: var(--label); font-weight: 600; }
+    .player__intro .glass-btn { margin-top: 6px; }
+
+    /* ---------- Subject demographics ---------- */
+
+    .demo {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: .85rem;
+    }
+
+    .demo li {
+      padding: 3px 12px;
+      border-radius: 999px;
+      background: var(--fill);
+      color: var(--label);
+    }
+
+    .demo li span { color: var(--secondary); margin-right: 4px; }
 
     .player__done {
       display: flex;
@@ -520,8 +570,9 @@
         inset 0 -10px 20px rgba(0, 0, 0, .05);
     }
 
-    /* ---------- Finish splash: blue sweeps out from Finish, a check
-       draws itself, then it clears to reveal the end screen ---------- */
+    /* ---------- Splash (Begin and Finish): blue sweeps out from the
+       button, an icon draws itself, then it clears to reveal the next
+       screen ---------- */
 
     .splash {
       --sx: 50%;
@@ -570,8 +621,8 @@
       stroke-width: 5;
       stroke-linecap: round;
       stroke-linejoin: round;
-      stroke-dasharray: 60;
-      stroke-dashoffset: 60;
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
       transition: stroke-dashoffset .45s var(--ease-out);
     }
 
@@ -609,7 +660,8 @@
       .player__controls { grid-template-columns: 1fr; justify-items: center; }
       .segmented, .pill { grid-column: 1; }
       .pill { justify-self: center; }
-      .segmented__option { min-width: 96px; }
+      .segmented__option { min-width: 0; padding: 8px 18px; }
+      .player__intro { padding: 16px; font-size: .88rem; }
     }
   </style>
 </head>
@@ -622,7 +674,7 @@
 
   <main>
     <section class="player">
-      <h2 class="player__question">Which is AI-generated?</h2>
+      <h2 class="player__question">Which image provides more clinically useful information for diagnosis?</h2>
 
       <div class="progress">
         <div class="progress__track" id="progress" role="progressbar" aria-label="Progress" aria-valuemin="0" aria-valuemax="120" aria-valuenow="0">
@@ -631,17 +683,27 @@
         <span class="progress__label" id="progress-label" aria-hidden="true"></span>
       </div>
 
-      <div class="player__image" id="player-image">
-        <img id="scan" class="is-loading" alt="Glass brain views of tau PET in two rows, one scanner-acquired and one AI-generated">
+      <ul class="demo" id="demo" aria-label="Subject information" hidden></ul>
+
+      <div class="player__image is-done" id="player-image">
+        <div class="player__intro" id="intro">
+          <h3>Instructions</h3>
+          <p>Once you begin, you’ll view 2 versions of 120 subjects’ <strong>tau PET</strong> scans. The first version is shown in the <strong>top row</strong>, and the second is shown in the <strong>bottom row</strong>. Each version contains four glass-brain views on the same Tau SUVR scale: yellow is low uptake, red to black is high.</p>
+          <p>For each subject, choose the row that gives <strong>more clinically useful information for diagnosis</strong> (where tau is, how far it extends, its pattern), or <strong>Equal</strong> if neither does.</p>
+          <p>Hover over the image to magnify it. Download your answers at the end before closing this tab.</p>
+          <button type="button" class="glass-btn" id="start" data-cursor="highlight">Begin</button>
+        </div>
+        <img id="scan" class="is-loading" alt="Glass brain views of a tau PET scan in two rows, top and bottom" hidden>
       </div>
 
       <div class="player__controls">
-        <div class="segmented" id="choices" role="group" aria-label="Your answer">
+        <div class="segmented" id="choices" role="group" aria-label="Your answer" hidden>
           <span class="segmented__light" id="choice-light" aria-hidden="true"></span>
-          <button type="button" class="segmented__option" id="choose-top" aria-pressed="false" data-cursor="highlight">Top</button>
-          <button type="button" class="segmented__option" id="choose-bottom" aria-pressed="false" data-cursor="highlight">Bottom</button>
+          <button type="button" class="segmented__option" data-answer="top" aria-pressed="false" data-cursor="highlight">Top</button>
+          <button type="button" class="segmented__option" data-answer="bottom" aria-pressed="false" data-cursor="highlight">Bottom</button>
+          <button type="button" class="segmented__option" data-answer="equal" aria-pressed="false" data-cursor="highlight">Equal</button>
         </div>
-        <button type="button" class="pill" id="next" data-cursor="lift" disabled>
+        <button type="button" class="pill" id="next" data-cursor="lift" disabled hidden>
           <span id="next-label">Next</span>
           <svg viewBox="0 0 8 13" aria-hidden="true"><path d="M1.5 1.5 6.5 6.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -653,9 +715,9 @@
     <div class="splash__inner">
       <svg class="splash__check" viewBox="0 0 96 96">
         <circle cx="48" cy="48" r="45"/>
-        <path d="M30 49l12 12 24-26"/>
+        <path id="splash-icon" d="M30 49l12 12 24-26"/>
       </svg>
-      <p class="splash__text">120 cases complete</p>
+      <p class="splash__text" id="splash-text"></p>
     </div>
   </div>
 
@@ -668,6 +730,37 @@
     (function () {
       var RIDS = [21,120,337,555,679,680,1190,1261,2121,2183,2234,2403,4028,4090,4200,4212,4213,4262,4335,4469,4580,4598,4607,4637,4644,4706,4721,4813,4827,4855,4872,5126,5154,5169,5265,6016,6038,6045,6062,6065,6072,6113,6133,6142,6144,6147,6186,6199,6209,6228,6231,6237,6244,6264,6284,6288,6306,6312,6314,6349,6356,6358,6374,6394,6396,6404,6422,6426,6428,6429,6437,6467,6476,6483,6487,6494,6498,6503,6521,6549,6559,6564,6566,6580,6581,6589,6606,6634,6635,6679,6704,6719,6734,6735,6742,6770,6771,6803,6810,6825,6834,6845,6846,6883,6886,6914,6918,6925,6943,6958,6965,6987,6996,6999,7001,7004,7013,7015,7020,7054];
       var IMAGE_DIR = 'output_glassbrain_slices';
+
+      // Demographic / clinical information per subject, keyed by RID. Each
+      // entry is shown above the image in the order written; leave a RID out
+      // (or this object empty) and the panel is hidden for that case.
+      // Example: 21: { 'Age': 74, 'Sex': 'F', 'Diagnosis': 'AD', 'MMSE': 22 },
+      var SUBJECTS = {
+      };
+
+      var player = document.querySelector('.player');
+      var demo = document.getElementById('demo');
+      var hasAnyDemo = Object.keys(SUBJECTS).length > 0;
+      player.classList.toggle('has-demo', hasAnyDemo);
+
+      function showDemographics(rid) {
+        var info = SUBJECTS[rid];
+        demo.replaceChildren();
+        if (info) {
+          Object.keys(info).forEach(function (label) {
+            var li = document.createElement('li');
+            var key = document.createElement('span');
+            key.textContent = label;
+            li.appendChild(key);
+            li.appendChild(document.createTextNode(info[label] == null || info[label] === '' ? '\u2014' : String(info[label])));
+            demo.appendChild(li);
+          });
+        }
+        // Keep the row's space whenever any subject has data, so the
+        // layout doesn't jump between cases.
+        demo.hidden = !hasAnyDemo;
+        demo.style.visibility = info ? '' : 'hidden';
+      }
 
       var scan = document.getElementById('scan');
       var imageBox = document.getElementById('player-image');
@@ -715,7 +808,7 @@
         options.forEach(function (o) { o.setAttribute('aria-pressed', String(o === btn)); });
         choices.classList.add('has-choice');
         placeLight();
-        answers[order[index]] = btn.id === 'choose-top' ? 'top' : 'bottom';
+        answers[order[index]] = btn.dataset.answer;
         nextBtn.disabled = false;
       }
 
@@ -743,7 +836,7 @@
       }
 
       var index = 0;
-      var answers = {};   // rid -> 'top' | 'bottom' (the row picked as AI-generated)
+      var answers = {};   // rid -> 'top' | 'bottom' | 'equal' (the row with more clinically useful information)
       var downloaded = false;
 
       function show() {
@@ -755,6 +848,7 @@
           scan.classList.remove('is-loading');
         };
         img.src = src;
+        showDemographics(order[index]);
         setProgress(index + 1);
         clearChoice();
         nextLabel.textContent = index === order.length - 1 ? 'Finish' : 'Next';
@@ -763,12 +857,12 @@
         if (index + 1 < order.length) new Image().src = imageFor(order[index + 1]);
       }
 
-      // One row per patient, sorted by ID: rid, the row picked as AI-generated.
+      // One row per patient, sorted by ID: rid, the row judged more clinically useful (or equal).
       function resultsCsv() {
         var rows = RIDS.slice().sort(function (a, b) { return a - b; }).map(function (rid) {
           return rid + ',' + (answers[rid] || '');
         });
-        return 'rid,prediction_position\n' + rows.join('\n') + '\n';
+        return 'rid,more_useful_position\n' + rows.join('\n') + '\n';
       }
 
       function downloadCsv() {
@@ -779,7 +873,7 @@
         var url = URL.createObjectURL(new Blob([resultsCsv()], { type: 'text/csv' }));
         var a = document.createElement('a');
         a.href = url;
-        a.download = 'ai_or_real_answers_' + stamp + '.csv';
+        a.download = 'clinical_utility_answers_' + stamp + '.csv';
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -791,6 +885,7 @@
         setProgress(order.length);
         choices.hidden = true;
         nextBtn.hidden = true;
+        demo.hidden = true;
         imageBox.classList.add('is-done');
         imageBox.innerHTML =
           '<div class="player__done">' +
@@ -801,10 +896,14 @@
         document.getElementById('download').addEventListener('click', downloadCsv);
       }
 
-      // Blue sweeps out from the Finish button, a check draws itself, and
-      // the end screen is swapped in underneath before the splash clears.
-      function playSplash(fromEl, done) {
+      // Blue sweeps out from the button, an icon draws itself, and the
+      // next screen is swapped in underneath before the splash clears.
+      var SPLASH_CHECK = 'M30 49l12 12 24-26';
+      var SPLASH_ARROW = 'M28 48h38M52 34l14 14-14 14';
+      function playSplash(fromEl, icon, text, done) {
         var splash = document.getElementById('splash');
+        document.getElementById('splash-icon').setAttribute('d', icon);
+        document.getElementById('splash-text').textContent = text;
         var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (fromEl) {
           var r = fromEl.getBoundingClientRect();
@@ -836,10 +935,25 @@
         if (!chosen) return;
         pulse();
         index++;
-        if (index < order.length) show(); else playSplash(nextBtn, finish);
+        if (index < order.length) show(); else playSplash(nextBtn, SPLASH_CHECK, order.length + ' cases complete', finish);
       });
 
-      show();
+      // Instructions first; the first case loads when the rater begins.
+      progressFill.style.width = '0';
+      progressLabel.textContent = '0/' + order.length;
+      new Image().src = imageFor(order[0]);
+      var startBtn = document.getElementById('start');
+      startBtn.addEventListener('click', function () {
+        startBtn.disabled = true;
+        playSplash(startBtn, SPLASH_ARROW, 'Let\u2019s begin', function () {
+          document.getElementById('intro').remove();
+          imageBox.classList.remove('is-done');
+          scan.hidden = false;
+          choices.hidden = false;
+          nextBtn.hidden = false;
+          show();
+        });
+      });
     })();
   </script>
 
